@@ -3,6 +3,7 @@ import re
 import subprocess
 from typing import Optional, Dict, Any, List
 from docker.errors import DockerException, APIError
+from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
 
 
 def get_docker_client() -> docker.DockerClient:
@@ -18,11 +19,12 @@ def get_docker_client() -> docker.DockerClient:
 
 def check_docker_available(verbose: bool = False) -> bool:
     """Check if Docker is available and running"""
+    logger = get_logger("container_pusher")
     try:
         client = get_docker_client()
         if verbose:
             version_info = client.version()
-            print(f"Docker version: {version_info['Version']}")
+            logger.info(f"Docker version: {version_info['Version']}")
         return True
     except RuntimeError:
         return False
@@ -100,11 +102,12 @@ def build_full_image_name(image_name: str, registry: Optional[str] = None) -> st
 
 def login_to_registry(registry: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None, verbose: bool = False) -> bool:
     """Login to container registry"""
+    logger = get_logger("container_pusher")
     client = get_docker_client()
     
     if not registry:
         if verbose:
-            print("No registry specified, assuming Docker Hub or already logged in")
+            logger.info("No registry specified, assuming Docker Hub or already logged in")
         return True
     
     registry_info = parse_registry_url(registry)
@@ -112,7 +115,7 @@ def login_to_registry(registry: Optional[str] = None, username: Optional[str] = 
     # For AWS ECR, use aws ecr get-login-password
     if registry_info['type'] == 'aws_ecr':
         if verbose:
-            print(f"Attempting AWS ECR login to {registry}")
+            logger.info(f"Attempting AWS ECR login to {registry}")
         try:
             # Get login token from AWS CLI
             aws_cmd = [
@@ -135,11 +138,11 @@ def login_to_registry(registry: Optional[str] = None, username: Optional[str] = 
             )
             
             if verbose:
-                print(f"✓ Successfully logged in to AWS ECR: {registry}")
+                logger.info(f"✓ Successfully logged in to AWS ECR: {registry}")
             return True
                 
         except Exception as e:
-            print(f"✗ Error during AWS ECR login: {e}")
+            logger.error(f"✗ Error during AWS ECR login: {e}")
             return False
     
     # For other registries, use username/password if provided
@@ -152,16 +155,16 @@ def login_to_registry(registry: Optional[str] = None, username: Optional[str] = 
             )
             
             if verbose:
-                print(f"✓ Successfully logged in to {registry}")
+                logger.info(f"✓ Successfully logged in to {registry}")
             return True
                 
         except Exception as e:
-            print(f"✗ Error during login: {e}")
+            logger.error(f"✗ Error during login: {e}")
             return False
     
     # Assume already logged in
     if verbose:
-        print(f"Assuming already logged in to {registry}")
+        logger.info(f"Assuming already logged in to {registry}")
     return True
 
 
@@ -178,6 +181,7 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
     Returns:
         True if push successful, False otherwise
     """
+    logger = get_logger("container_pusher")
     client = get_docker_client()
     
     # Build full image name
@@ -188,20 +192,20 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
         try:
             image = client.images.get(image_name)
         except docker.errors.ImageNotFound:
-            print(f"✗ Image not found: {image_name}")
+            logger.error(f"✗ Image not found: {image_name}")
             return False
         
         # Tag image if registry is specified
         if registry and full_image_name != image_name:
             if verbose:
-                print(f"Tagging image: {image_name} -> {full_image_name}")
+                logger.info(f"Tagging image: {image_name} -> {full_image_name}")
             
             # Tag the image
             image.tag(full_image_name)
         
         # Push main image
         if verbose:
-            print(f"Pushing image: {full_image_name}")
+            logger.info(f"Pushing image: {full_image_name}")
         
         # Push with streaming output
         push_logs = client.api.push(
@@ -214,19 +218,19 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
             if verbose and 'status' in log:
                 status = log['status']
                 if 'id' in log:
-                    print(f"{log['id']}: {status}")
+                    logger.debug(f"{log['id']}: {status}")
                 else:
-                    print(status)
+                    logger.debug(status)
         
         if verbose:
-            print(f"✓ Successfully pushed image: {full_image_name}")
+            logger.info(f"✓ Successfully pushed image: {full_image_name}")
         
         # Push additional tags if specified
         if tags:
             for tag in tags:
                 tag_full_name = build_full_image_name(f"{image_name}:{tag}", registry)
                 if verbose:
-                    print(f"Pushing additional tag: {tag_full_name}")
+                    logger.info(f"Pushing additional tag: {tag_full_name}")
                 
                 # Tag and push
                 image.tag(tag_full_name)
@@ -241,17 +245,17 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
                     if verbose and 'status' in log:
                         status = log['status']
                         if 'id' in log:
-                            print(f"{log['id']}: {status}")
+                            logger.debug(f"{log['id']}: {status}")
                         else:
-                            print(status)
+                            logger.debug(status)
         
         return True
         
     except APIError as e:
-        print(f"✗ Docker API error during push: {e}")
+        logger.error(f"✗ Docker API error during push: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error during push: {e}")
+        logger.error(f"✗ Error during push: {e}")
         return False
 
 

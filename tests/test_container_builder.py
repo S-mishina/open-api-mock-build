@@ -28,21 +28,25 @@ class TestContainerBuilder:
             container_builder.get_docker_client()
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
-    def test_check_docker_available_success(self, mock_get_client):
+    @patch('open_api_mock_build.container_builder.get_logger')
+    def test_check_docker_available_success(self, mock_get_logger, mock_get_client):
         """Test Docker availability check success"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         mock_client = MagicMock()
         mock_client.version.return_value = {'Version': '24.0.7'}
         mock_get_client.return_value = mock_client
-        
+
         # Test without verbose
         result = container_builder.check_docker_available()
         assert result is True
-        
+
         # Test with verbose
-        with patch('builtins.print') as mock_print:
-            result = container_builder.check_docker_available(verbose=True)
-            assert result is True
-            mock_print.assert_called_with("Docker version: 24.0.7")
+        result = container_builder.check_docker_available(verbose=True)
+        assert result is True
+        mock_logger.info.assert_called_with("Docker version: 24.0.7")
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
     def test_check_docker_available_failure(self, mock_get_client):
@@ -228,18 +232,22 @@ class TestContainerBuilder:
         assert result is False
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
-    def test_remove_image_success(self, mock_get_client):
+    @patch('open_api_mock_build.container_builder.get_logger')
+    def test_remove_image_success(self, mock_get_logger, mock_get_client):
         """Test successful image removal"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         
-        with patch('builtins.print') as mock_print:
-            result = container_builder.remove_image('test:latest', verbose=True)
+        result = container_builder.remove_image('test:latest', verbose=True)
         
         assert result is True
         mock_client.images.remove.assert_called_once_with('test:latest', force=False)
-        mock_print.assert_any_call("Removing image: test:latest")
-        mock_print.assert_any_call("✓ Successfully removed image: test:latest")
+        mock_logger.info.assert_any_call("Removing image: test:latest")
+        mock_logger.info.assert_any_call("✓ Successfully removed image: test:latest")
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
     def test_list_images_success(self, mock_get_client):
@@ -297,18 +305,22 @@ class TestContainerBuilder:
         assert result == []
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
-    def test_remove_image_not_found_verbose(self, mock_get_client):
+    @patch('open_api_mock_build.container_builder.get_logger')
+    def test_remove_image_not_found_verbose(self, mock_get_logger, mock_get_client):
         """Test removing non-existent image with verbose output"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.images.remove.side_effect = docker.errors.ImageNotFound("Image not found")
         
-        with patch('builtins.print') as mock_print:
-            result = container_builder.remove_image('non_existent:latest', verbose=True)
+        result = container_builder.remove_image('non_existent:latest', verbose=True)
         
         assert result is False
-        mock_print.assert_any_call("Removing image: non_existent:latest")
-        mock_print.assert_any_call("Image not found: non_existent:latest")
+        mock_logger.info.assert_any_call("Removing image: non_existent:latest")
+        mock_logger.warning.assert_any_call("Image not found: non_existent:latest")
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
     def test_remove_image_api_error(self, mock_get_client):
@@ -335,8 +347,13 @@ class TestContainerBuilder:
         assert result is False
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
-    def test_prune_images_success(self, mock_get_client):
+    @patch('open_api_mock_build.container_builder.get_logger')
+    def test_prune_images_success(self, mock_get_logger, mock_get_client):
         """Test successful image pruning"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_client.images.prune.return_value = {
@@ -344,13 +361,12 @@ class TestContainerBuilder:
             'SpaceReclaimed': 1234567890
         }
         
-        with patch('builtins.print') as mock_print:
-            result = container_builder.prune_images(verbose=True)
+        result = container_builder.prune_images(verbose=True)
         
         assert 'ImagesDeleted' in result
         assert result['SpaceReclaimed'] == 1234567890
-        mock_print.assert_any_call("Pruning unused Docker images...")
-        mock_print.assert_any_call("✓ Deleted 2 images, reclaimed 1234567890 bytes")
+        mock_logger.info.assert_any_call("Pruning unused Docker images...")
+        mock_logger.info.assert_any_call("✓ Deleted 2 images, reclaimed 1234567890 bytes")
 
     @patch('open_api_mock_build.container_builder.get_docker_client')
     def test_prune_images_exception(self, mock_get_client):

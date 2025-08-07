@@ -2,6 +2,7 @@ import json
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Tuple, List
+from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
 
 
 def load_spec_file(spec_file: str, verbose: bool = False) -> Tuple[Dict[Any, Any], str]:
@@ -19,13 +20,14 @@ def load_spec_file(spec_file: str, verbose: bool = False) -> Tuple[Dict[Any, Any
         FileNotFoundError: If the file doesn't exist
         ValueError: If the file format is not supported or invalid
     """
+    logger = get_logger("openapi_validator")
     spec_path = Path(spec_file)
     
     if not spec_path.exists():
         raise FileNotFoundError(f"Specification file not found: {spec_file}")
     
     if verbose:
-        print(f"Loading specification file: {spec_file}")
+        logger.info(f"Loading specification file: {spec_file}")
     
     file_extension = spec_path.suffix.lower()
     
@@ -74,6 +76,8 @@ def validate_openapi_spec(spec_data: Dict[Any, Any], verbose: bool = False) -> D
     Returns:
         Dictionary with validation results
     """
+    logger = get_logger("openapi_validator")
+    
     if not isinstance(spec_data, dict):
         raise ValueError("Specification must be a JSON object")
     
@@ -117,11 +121,11 @@ def validate_openapi_spec(spec_data: Dict[Any, Any], verbose: bool = False) -> D
     }
     
     if verbose:
-        print(f"✓ OpenAPI specification validation passed")
-        print(f"  Title: {result['title']}")
-        print(f"  Version: {result['version']}")
-        print(f"  Spec Version: {result['spec_version']}")
-        print(f"  Paths: {result['paths_count']}")
+        logger.info(f"✓ OpenAPI specification validation passed")
+        logger.info(f"  Title: {result['title']}")
+        logger.info(f"  Version: {result['version']}")
+        logger.info(f"  Spec Version: {result['spec_version']}")
+        logger.info(f"  Paths: {result['paths_count']}")
     
     return result
 
@@ -215,6 +219,8 @@ def extract_endpoints(spec_file: str, verbose: bool = False) -> List[Dict[str, A
     Returns:
         List of endpoint information
     """
+    logger = get_logger("openapi_validator")
+    
     try:
         spec_data, _ = load_spec_file(spec_file, verbose)
         paths = spec_data.get('paths', {})
@@ -235,11 +241,11 @@ def extract_endpoints(spec_file: str, verbose: bool = False) -> List[Dict[str, A
                         endpoints.append(endpoint)
         
         if verbose:
-            print(f"Found {len(endpoints)} endpoints")
+            logger.info(f"Found {len(endpoints)} endpoints")
         
         return endpoints
         
     except Exception as e:
         if verbose:
-            print(f"Error extracting endpoints: {e}")
+            logger.error(f"Error extracting endpoints: {e}")
         return []

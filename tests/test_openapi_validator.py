@@ -3,7 +3,7 @@ import tempfile
 import json
 import yaml
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from open_api_mock_build import openapi_validator
 
 
@@ -402,20 +402,24 @@ class TestOpenAPIValidator:
         with pytest.raises(ValueError, match="'info' field must be an object"):
             openapi_validator.validate_openapi_spec(invalid_spec)
 
-    def test_validate_openapi_spec_verbose(self):
+    @patch('open_api_mock_build.openapi_validator.get_logger')
+    def test_validate_openapi_spec_verbose(self, mock_get_logger):
         """Test validating spec with verbose output"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         spec = {
             "openapi": "3.0.0",
             "info": {"title": "Test API", "version": "1.0.0"},
             "paths": {}
         }
         
-        with patch('builtins.print') as mock_print:
-            result = openapi_validator.validate_openapi_spec(spec, verbose=True)
+        result = openapi_validator.validate_openapi_spec(spec, verbose=True)
         
         assert result['title'] == 'Test API'
-        # Check that verbose output was printed
-        mock_print.assert_called()
+        # Check that verbose output was logged
+        mock_logger.info.assert_called()
 
     def test_load_spec_file_unknown_extension(self):
         """Test loading file with unknown extension"""

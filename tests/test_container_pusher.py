@@ -456,12 +456,15 @@ class TestContainerPusher:
         ]
         mock_client.api.push.return_value = push_logs
         
-        with patch('builtins.print') as mock_print:
+        with patch('open_api_mock_build.container_pusher.get_logger') as mock_get_logger:
+            mock_logger = MagicMock()
+            mock_get_logger.return_value = mock_logger
+            
             result = container_pusher.push_image("test:latest", verbose=True)
         
         assert result is True
-        # Check that ID was included in output
-        mock_print.assert_any_call("layer1: Pushing")
+        # Check that ID was included in debug output
+        mock_logger.debug.assert_any_call("layer1: Pushing")
 
     def test_build_full_image_name_with_port_registry(self):
         """Test building image name with registry that has port"""

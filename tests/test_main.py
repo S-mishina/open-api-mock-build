@@ -10,11 +10,15 @@ class TestMain:
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
     @patch('open_api_mock_build.main.container_pusher')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_success_with_push(
-        self, mock_print, mock_pusher, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_pusher, mock_builder, mock_validator, mock_parse_args
     ):
         """Test successful main execution with push"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -68,11 +72,15 @@ class TestMain:
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_success_no_push(
-        self, mock_print, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_builder, mock_validator, mock_parse_args
     ):
         """Test successful main execution without push"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -112,9 +120,13 @@ class TestMain:
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
-    @patch('builtins.print')
-    def test_main_validation_failure(self, mock_print, mock_validator, mock_parse_args):
+    @patch('open_api_mock_build.main.get_logger')
+    def test_main_validation_failure(self, mock_get_logger, mock_validator, mock_parse_args):
         """Test main execution with validation failure"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'invalid.yaml'
@@ -134,16 +146,20 @@ class TestMain:
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ OpenAPI validation failed: Invalid OpenAPI specification")
+        mock_logger.error.assert_any_call("✗ OpenAPI validation failed: Invalid OpenAPI specification")
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_docker_not_available(
-        self, mock_print, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_builder, mock_validator, mock_parse_args
     ):
         """Test main execution when Docker not available"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -171,16 +187,20 @@ class TestMain:
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ Docker is not available or not running")
+        mock_logger.error.assert_any_call("✗ Docker is not available or not running")
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_build_failure(
-        self, mock_print, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_builder, mock_validator, mock_parse_args
     ):
         """Test main execution with build failure"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -209,17 +229,21 @@ class TestMain:
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ Container build failed")
+        mock_logger.error.assert_any_call("✗ Container build failed")
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
     @patch('open_api_mock_build.main.container_pusher')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_push_failure(
-        self, mock_print, mock_pusher, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_pusher, mock_builder, mock_validator, mock_parse_args
     ):
         """Test main execution with push failure"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -251,14 +275,18 @@ class TestMain:
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ Container push failed")
+        mock_logger.error.assert_any_call("✗ Container push failed")
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
-    @patch('builtins.print')
-    @patch('traceback.print_exc')
-    def test_main_exception_handling(self, mock_traceback, mock_print, mock_validator, mock_parse_args):
+    @patch('open_api_mock_build.main.get_logger')
+    @patch('open_api_mock_build.main.log_operation_failure')
+    def test_main_exception_handling(self, mock_log_failure, mock_get_logger, mock_validator, mock_parse_args):
         """Test main exception handling"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -270,23 +298,27 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup exception
-        mock_validator.validate_file.side_effect = Exception("Unexpected error")
+        test_exception = Exception("Unexpected error")
+        mock_validator.validate_file.side_effect = test_exception
 
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ Error: Unexpected error")
-        mock_traceback.assert_called_once()
+        mock_log_failure.assert_called_once_with(mock_logger, "main execution", test_exception)
 
     @patch('open_api_mock_build.main.parse_args')
     @patch('open_api_mock_build.main.openapi_validator')
     @patch('open_api_mock_build.main.container_builder')
     @patch('open_api_mock_build.main.container_pusher')
-    @patch('builtins.print')
+    @patch('open_api_mock_build.main.get_logger')
     def test_main_registry_login_failure(
-        self, mock_print, mock_pusher, mock_builder, mock_validator, mock_parse_args
+        self, mock_get_logger, mock_pusher, mock_builder, mock_validator, mock_parse_args
     ):
         """Test main execution with registry login failure"""
+        # Setup logger mock
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+        
         # Setup args
         mock_args = MagicMock()
         mock_args.spec_file = 'test.yaml'
@@ -317,4 +349,4 @@ class TestMain:
         result = main()
 
         assert result == 1
-        mock_print.assert_any_call("✗ Registry login failed")
+        mock_logger.error.assert_any_call("✗ Registry login failed")

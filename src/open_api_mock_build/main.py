@@ -2,49 +2,51 @@ from .cli import parse_args
 from . import openapi_validator
 from . import container_builder
 from . import container_pusher
+from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
 
 
 def main():
     """Main entry point for the application"""
     args = parse_args()
     
-    print(f"OpenAPI Container Build Tool")
-    print(f"Spec file: {args.spec_file}")
-    print(f"Image: {args.image}")
-    print(f"Port: {args.port}")
-    print(f"Registry: {args.registry}")
-    print(f"Push to registry: {not args.no_push}")
-    print(f"Verbose: {args.verbose}")
-    print()
+    # Setup logger
+    logger = get_logger("main")
+    
+    logger.info("OpenAPI Container Build Tool")
+    logger.info(f"Spec file: {args.spec_file}")
+    logger.info(f"Image: {args.image}")
+    logger.info(f"Port: {args.port}")
+    logger.info(f"Registry: {args.registry}")
+    logger.info(f"Push to registry: {not args.no_push}")
+    logger.info(f"Verbose: {args.verbose}")
     
     try:
         # Step 1: Validate OpenAPI specification
-        print("Step 1: Validating OpenAPI specification...")
+        log_operation_start(logger, "OpenAPI specification validation")
         validation_result = openapi_validator.validate_file(
             spec_file=args.spec_file,
             verbose=args.verbose
         )
         
         if not validation_result['valid']:
-            print(f"✗ OpenAPI validation failed: {validation_result['message']}")
+            logger.error(f"✗ OpenAPI validation failed: {validation_result['message']}")
             return 1
         
-        print("✓ OpenAPI specification validation passed")
+        log_operation_success(logger, "OpenAPI specification validation")
         
         if args.verbose:
             info = validation_result['validation_result']
-            print(f"  Title: {info['title']}")
-            print(f"  Version: {info['version']}")
-            print(f"  Spec Version: {info['spec_version']}")
-            print(f"  Paths: {info['paths_count']}")
-        print()
+            logger.debug(f"  Title: {info['title']}")
+            logger.debug(f"  Version: {info['version']}")
+            logger.debug(f"  Spec Version: {info['spec_version']}")
+            logger.debug(f"  Paths: {info['paths_count']}")
         
         # Step 2: Build container image
-        print("Step 2: Building container image...")
+        log_operation_start(logger, "container image build")
         
         # Check docker availability
         if not container_builder.check_docker_available(verbose=args.verbose):
-            print("✗ Docker is not available or not running")
+            logger.error("✗ Docker is not available or not running")
             return 1
         
         build_success = container_builder.build_image(
@@ -57,19 +59,18 @@ def main():
         )
         
         if not build_success:
-            print("✗ Container build failed")
+            logger.error("✗ Container build failed")
             return 1
         
-        print("✓ Container image built successfully")
-        print()
+        log_operation_success(logger, "container image build")
         
         # Step 3: Push container image (if not disabled)
         if not args.no_push:
-            print("Step 3: Pushing container image...")
+            log_operation_start(logger, "container image push")
             
             # Check docker availability
             if not container_pusher.check_docker_available(verbose=args.verbose):
-                print("✗ Docker is not available or not running")
+                logger.error("✗ Docker is not available or not running")
                 return 1
             
             # Login to registry if specified
@@ -79,7 +80,7 @@ def main():
                     verbose=args.verbose
                 )
                 if not login_success:
-                    print("✗ Registry login failed")
+                    logger.error("✗ Registry login failed")
                     return 1
             
             # Push image
@@ -90,22 +91,18 @@ def main():
             )
             
             if not push_success:
-                print("✗ Container push failed")
+                logger.error("✗ Container push failed")
                 return 1
             
-            print("✓ Container image pushed successfully")
+            log_operation_success(logger, "container image push")
         else:
-            print("Step 3: Skipping push (--no-push specified)")
+            logger.info("Step 3: Skipping push (--no-push specified)")
         
-        print()
-        print("🎉 All steps completed successfully!")
+        logger.info("🎉 All steps completed successfully!")
         return 0
         
     except Exception as e:
-        print(f"✗ Error: {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
+        log_operation_failure(logger, "main execution", e)
         return 1
     
 

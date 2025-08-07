@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from docker.errors import DockerException, APIError, BuildError
+from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
 
 
 def get_docker_client() -> docker.DockerClient:
@@ -18,11 +19,12 @@ def get_docker_client() -> docker.DockerClient:
 
 def check_docker_available(verbose: bool = False) -> bool:
     """Check if Docker is available and running"""
+    logger = get_logger("container_builder")
     try:
         client = get_docker_client()
         if verbose:
             version_info = client.version()
-            print(f"Docker version: {version_info['Version']}")
+            logger.info(f"Docker version: {version_info['Version']}")
         return True
     except RuntimeError:
         return False
@@ -52,6 +54,7 @@ def build_image(
     Returns:
         True if build successful, False otherwise
     """
+    logger = get_logger("container_builder")
     client = get_docker_client()
     
     # Check if Dockerfile exists
@@ -60,9 +63,9 @@ def build_image(
         raise FileNotFoundError(f"Dockerfile not found: {dockerfile}")
     
     if verbose:
-        print(f"Building Docker image: {image_name}")
-        print(f"Dockerfile: {dockerfile}")
-        print(f"Build context: {build_context}")
+        logger.info(f"Building Docker image: {image_name}")
+        logger.info(f"Dockerfile: {dockerfile}")
+        logger.info(f"Build context: {build_context}")
     
     try:
         # Prepare tags list
@@ -89,9 +92,9 @@ def build_image(
         for log in build_logs:
             if verbose:
                 if 'stream' in log:
-                    print(log['stream'].strip())
+                    logger.debug(log['stream'].strip())
                 elif 'error' in log:
-                    print(f"Error: {log['error']}")
+                    logger.error(f"Error: {log['error']}")
                     return False
         
         # Tag additional tags if specified
@@ -101,24 +104,24 @@ def build_image(
                 for tag in tags:
                     image.tag(tag)
                     if verbose:
-                        print(f"Tagged image with: {tag}")
+                        logger.info(f"Tagged image with: {tag}")
             except docker.errors.ImageNotFound:
-                print(f"✗ Built image not found: {image_name}")
+                logger.error(f"✗ Built image not found: {image_name}")
                 return False
         
         if verbose:
-            print(f"✓ Successfully built image: {image_name}")
+            logger.info(f"✓ Successfully built image: {image_name}")
         
         return True
         
     except BuildError as e:
-        print(f"✗ Build failed: {e}")
+        logger.error(f"✗ Build failed: {e}")
         return False
     except APIError as e:
-        print(f"✗ Docker API error during build: {e}")
+        logger.error(f"✗ Docker API error during build: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error during build: {e}")
+        logger.error(f"✗ Error during build: {e}")
         return False
 
 
@@ -178,50 +181,52 @@ def list_images(repository: Optional[str] = None) -> List[Dict[str, Any]]:
 
 def remove_image(image_name: str, force: bool = False, verbose: bool = False) -> bool:
     """Remove Docker image"""
+    logger = get_logger("container_builder")
     client = get_docker_client()
     
     try:
         if verbose:
-            print(f"Removing image: {image_name}")
+            logger.info(f"Removing image: {image_name}")
         
         client.images.remove(image_name, force=force)
         
         if verbose:
-            print(f"✓ Successfully removed image: {image_name}")
+            logger.info(f"✓ Successfully removed image: {image_name}")
         
         return True
         
     except docker.errors.ImageNotFound:
         if verbose:
-            print(f"Image not found: {image_name}")
+            logger.warning(f"Image not found: {image_name}")
         return False
     except APIError as e:
-        print(f"✗ Error removing image: {e}")
+        logger.error(f"✗ Error removing image: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error removing image: {e}")
+        logger.error(f"✗ Error removing image: {e}")
         return False
 
 
 def prune_images(verbose: bool = False) -> Dict[str, Any]:
     """Remove unused Docker images"""
+    logger = get_logger("container_builder")
     client = get_docker_client()
     
     try:
         if verbose:
-            print("Pruning unused Docker images...")
+            logger.info("Pruning unused Docker images...")
         
         result = client.images.prune()
         
         if verbose:
             deleted_count = len(result.get('ImagesDeleted', []))
             reclaimed_space = result.get('SpaceReclaimed', 0)
-            print(f"✓ Deleted {deleted_count} images, reclaimed {reclaimed_space} bytes")
+            logger.info(f"✓ Deleted {deleted_count} images, reclaimed {reclaimed_space} bytes")
         
         return result
         
     except Exception as e:
-        print(f"✗ Error pruning images: {e}")
+        logger.error(f"✗ Error pruning images: {e}")
         return {}
 
 
