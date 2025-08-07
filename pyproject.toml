@@ -1,0 +1,27 @@
+[project]
+name = "open-api-mock-build"
+version = "0.1.0"
+description = "A tool to validate OpenAPI specifications and build/push container images with openapi-mock-server"
+authors = [
+    {name = "S-mishina",email = "45090872+S-mishina@users.noreply.github.com"}
+]
+packages = [{ include = "open_api_mock_build", from = "src" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6.0",
+    "docker>=6.0",
+]
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.0"
+pytest-mock = "^3.0"
+pytest-cov = "^4.0"
+
+[project.scripts]
+open-api-mock-build = "open_api_mock_build.main:main"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
