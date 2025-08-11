@@ -28,7 +28,6 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install
-          poetry add pytest
       - name: Run pytest
         env:
           PYTHONPATH: ${{ github.workspace }}/src
