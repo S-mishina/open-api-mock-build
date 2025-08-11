@@ -271,8 +271,8 @@ class TestContainerPusher:
         with patch('builtins.print'):
             result = container_pusher.push_image("test:latest", verbose=True)
         
-        # The implementation continues even with errors in logs, so it returns True
-        assert result is True
+        # The implementation correctly detects errors in logs and returns False
+        assert result is False
 
     def test_parse_registry_url_edge_cases(self):
         """Test parsing registry URL edge cases"""
@@ -425,8 +425,8 @@ class TestContainerPusher:
         with patch('builtins.print'):
             result = container_pusher.push_image("test:latest", verbose=True)
         
-        # Implementation continues processing logs even with errors
-        assert result is True
+        # The implementation correctly detects errors in logs and returns False
+        assert result is False
 
     def test_parse_registry_url_with_none(self):
         """Test parse_registry_url with None input"""
