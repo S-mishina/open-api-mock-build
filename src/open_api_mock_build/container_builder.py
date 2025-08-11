@@ -1,9 +1,8 @@
 import docker
-import os
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from docker.errors import DockerException, APIError, BuildError
-from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
+from .logger import get_logger
 
 
 def get_docker_client() -> docker.DockerClient:

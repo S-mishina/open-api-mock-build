@@ -1,6 +1,6 @@
 [project]
 name = "open-api-mock-build"
-version = "0.1.0"
+version = "1.0.0"
 description = "A tool to validate OpenAPI specifications and build/push container images with openapi-mock-server"
 authors = [
     {name = "S-mishina",email = "45090872+S-mishina@users.noreply.github.com"}

@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from open_api_mock_build.main import main
 
