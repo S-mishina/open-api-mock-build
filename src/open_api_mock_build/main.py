@@ -2,6 +2,7 @@ from .cli import parse_args
 from . import openapi_validator
 from . import container_builder
 from . import container_pusher
+from .argument_validator import validate_arguments
 from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
 
 
@@ -11,6 +12,12 @@ def main():
     
     # Setup logger
     logger = get_logger("main")
+    
+    # Validate arguments
+    is_valid, error_message = validate_arguments(args)
+    if not is_valid:
+        logger.error(error_message)
+        return 1
     
     logger.info("OpenAPI Container Build Tool")
     logger.info(f"Spec file: {args.spec_file}")

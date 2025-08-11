@@ -214,7 +214,15 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
             decode=True
         )
         
+        push_error = None
         for log in push_logs:
+            # Check for errors in push logs
+            if 'errorDetail' in log or 'error' in log:
+                error_msg = log.get('error') or log.get('errorDetail', {}).get('message', 'Unknown error')
+                push_error = error_msg
+                logger.error(f"✗ Push error: {error_msg}")
+                break
+                
             if verbose and 'status' in log:
                 status = log['status']
                 if 'id' in log:
@@ -222,6 +230,11 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
                 else:
                     logger.debug(status)
         
+        # Check if push was successful
+        if push_error:
+            logger.error(f"✗ Failed to push image: {full_image_name}")
+            return False
+            
         if verbose:
             logger.info(f"✓ Successfully pushed image: {full_image_name}")
         
@@ -241,13 +254,26 @@ def push_image(image_name: str, registry: Optional[str] = None, tags: Optional[L
                     decode=True
                 )
                 
+                tag_push_error = None
                 for log in push_logs:
+                    # Check for errors in push logs
+                    if 'errorDetail' in log or 'error' in log:
+                        error_msg = log.get('error') or log.get('errorDetail', {}).get('message', 'Unknown error')
+                        tag_push_error = error_msg
+                        logger.error(f"✗ Push error for tag {tag}: {error_msg}")
+                        break
+                        
                     if verbose and 'status' in log:
                         status = log['status']
                         if 'id' in log:
                             logger.debug(f"{log['id']}: {status}")
                         else:
                             logger.debug(status)
+                
+                # Check if tag push was successful
+                if tag_push_error:
+                    logger.error(f"✗ Failed to push tag: {tag_full_name}")
+                    return False
         
         return True
         
