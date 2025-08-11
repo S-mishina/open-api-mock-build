@@ -1,9 +1,9 @@
 import docker
 import re
 import subprocess
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 from docker.errors import DockerException, APIError
-from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
+from .logger import get_logger
 
 
 def get_docker_client() -> docker.DockerClient:
@@ -131,7 +131,7 @@ def login_to_registry(registry: Optional[str] = None, username: Optional[str] = 
             )
             
             # Use docker client to login
-            login_result = client.login(
+            client.login(
                 username="AWS",
                 password=aws_result.stdout.strip(),
                 registry=registry
@@ -148,7 +148,7 @@ def login_to_registry(registry: Optional[str] = None, username: Optional[str] = 
     # For other registries, use username/password if provided
     elif username and password:
         try:
-            login_result = client.login(
+            client.login(
                 username=username,
                 password=password,
                 registry=registry

@@ -2,7 +2,7 @@ import json
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Tuple, List
-from .logger import get_logger, log_operation_start, log_operation_success, log_operation_failure
+from .logger import get_logger
 
 
 def load_spec_file(spec_file: str, verbose: bool = False) -> Tuple[Dict[Any, Any], str]:
@@ -121,7 +121,7 @@ def validate_openapi_spec(spec_data: Dict[Any, Any], verbose: bool = False) -> D
     }
     
     if verbose:
-        logger.info(f"✓ OpenAPI specification validation passed")
+        logger.info("✓ OpenAPI specification validation passed")
         logger.info(f"  Title: {result['title']}")
         logger.info(f"  Version: {result['version']}")
         logger.info(f"  Spec Version: {result['spec_version']}")

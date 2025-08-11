@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
-from pathlib import Path
+from unittest.mock import patch, MagicMock
 import docker.errors
 from open_api_mock_build import container_builder
 
